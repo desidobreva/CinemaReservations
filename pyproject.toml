@@ -1,0 +1,14 @@
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pylint.main]
+py-version = "3.11"
+disable = [
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "too-few-public-methods"
+]
+max-line-length = 100
