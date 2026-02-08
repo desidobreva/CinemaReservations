@@ -1,3 +1,9 @@
+"""Reservation and ReservationTicket ORM models.
+
+Defines database schema for cinema seat reservations and individual
+ticket records.
+"""
+
 import enum
 from datetime import datetime, timezone
 

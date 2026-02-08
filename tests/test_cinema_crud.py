@@ -1,3 +1,5 @@
+"""Cinema CRUD integration tests."""
+
 from datetime import datetime, timedelta, UTC
 
 def _login_admin(client):

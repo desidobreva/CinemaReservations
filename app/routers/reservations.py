@@ -1,3 +1,9 @@
+"""Reservation management endpoints.
+
+Endpoints for users to create, view, confirm, cancel and reschedule
+reservations. Enforces role-based access and status transitions.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone

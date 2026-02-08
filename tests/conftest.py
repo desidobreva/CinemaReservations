@@ -1,29 +1,8 @@
-# import pytest
-# from fastapi.testclient import TestClient
-# from sqlalchemy import create_engine
-# from sqlalchemy.orm import sessionmaker
+"""Test fixtures for API integration tests.
 
-# from app.db.base import Base
-# from app.core.deps import get_db
-# from app.main import app
-
-
-# @pytest.fixture()
-# def client() -> TestClient:
-#     engine = create_engine("sqlite+pysqlite:///:memory:", connect_args={"check_same_thread": False})
-#     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-#     Base.metadata.create_all(bind=engine)
-
-#     def override_get_db():
-#         db = TestingSessionLocal()
-#         try:
-#             yield db
-#         finally:
-#             db.close()
-
-#     app.dependency_overrides[get_db] = override_get_db
-#     return TestClient(app)
+Provides a FastAPI `TestClient` backed by an in-memory SQLite database
+and initializes default data required by tests.
+"""
 
 from typing import Generator
 import warnings

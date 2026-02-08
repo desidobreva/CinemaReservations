@@ -1,3 +1,6 @@
+"""Admin-related integration tests."""
+
+
 def _login_admin(client):
     r = client.post("/auth/login", data={"username": "admin", "password": "admin1234"}, headers={"Content-Type": "application/x-www-form-urlencoded"})
     assert r.status_code == 200
