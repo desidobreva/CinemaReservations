@@ -58,6 +58,9 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
 
 
 @app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def generic_exception_handler(  # pylint: disable=unused-argument
+    request: Request, exc: Exception
+) -> JSONResponse:
+    """Handle generic exceptions."""
     logging.exception("Unhandled error on %s %s", request.method, request.url)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
