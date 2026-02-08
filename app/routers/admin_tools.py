@@ -14,10 +14,9 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 def complete_past_reservations(
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN, UserRole.PROVIDER)),
-) -> dict:
+) -> dict[str, int]:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    # намираме confirmed резервации, чиято прожекция е минала
     rows = (
         db.query(Reservation)
         .join(Screening, Reservation.screening_id == Screening.id)

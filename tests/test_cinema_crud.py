@@ -24,7 +24,7 @@ def test_movie_crud(client):
     assert u.status_code == 200
     assert u.json()["title"] == "M1-Edited"
 
-    # delete (трябва да мине ако няма прожекции)
+    # delete
     d = client.delete(f"/cinema/movies/{mid}", headers=headers)
     assert d.status_code == 200
 

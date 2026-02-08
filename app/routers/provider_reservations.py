@@ -13,10 +13,10 @@ router = APIRouter(prefix="/provider/reservations", tags=["provider-reservations
 def list_incoming_reservations(
     db: Session = Depends(get_db),
     user: User = Depends(require_role(UserRole.PROVIDER, UserRole.ADMIN)),
+    skip: int = 0,
+    limit: int = 100,
 ) -> list[ReservationOut]:
-    # за по-строго: provider вижда само прожекциите, които е създал (screening.provider_id == user.id)
-    # за простота: provider/admin вижда всички
-    rows = db.query(Reservation).order_by(Reservation.id.desc()).all()
+    rows = db.query(Reservation).order_by(Reservation.id.desc()).offset(skip).limit(min(limit, 100)).all()
     return [
         ReservationOut(
             id=r.id,

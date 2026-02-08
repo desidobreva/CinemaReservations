@@ -1,10 +1,74 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cinema-reservations"
+version = "1.0.0"
+description = "Cinema reservation management API built with FastAPI"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "Cinema Team", email = "info@cinema.local"}
+]
+license = {text = "MIT"}
+keywords = ["cinema", "reservations", "fastapi", "api"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
+
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.6",
+    "SQLAlchemy==2.0.34",
+    "pydantic==2.8.2",
+    "pydantic-settings==2.4.0",
+    "python-jose==3.3.0",
+    "email-validator==2.2.0",
+    "python-multipart==0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy==1.11.2",
+    "pylint==3.2.7",
+    "pytest==8.3.2",
+    "pytest-cov==5.0.0",
+    "httpx==0.27.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cinema-reservations/api"
+Repository = "https://github.com/cinema-reservations/api"
+Issues = "https://github.com/cinema-reservations/api/issues"
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.setuptools.package-data]
+app = ["*.py"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+exclude = ["tests/", "venv/", ".venv/"]
+warn_redundant_casts = true
+warn_unused_configs = true
 
 [tool.pylint.main]
 py-version = "3.11"
+jobs = 0
 disable = [
   "missing-module-docstring",
   "missing-class-docstring",
@@ -12,3 +76,30 @@ disable = [
   "too-few-public-methods"
 ]
 max-line-length = 100
+min-similarity-lines = 4
+
+[tool.pylint.design]
+max-args = 6
+max-attributes = 8
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short --strict-markers"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/tests/*", "*/venv/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+skip_empty = true

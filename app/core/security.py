@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import bcrypt
 from jose import JWTError, jwt
@@ -22,11 +22,11 @@ def create_access_token(subject: str, expires_minutes: Optional[int] = None) -> 
     exp = now + timedelta(minutes=expire_minutes)
 
     payload: Dict[str, Any] = {"sub": subject, "iat": int(now.timestamp()), "exp": int(exp.timestamp())}
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+    return cast(str, jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm))
 
 
 def decode_token(token: str) -> Dict[str, Any]:
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
+        return cast(Dict[str, Any], jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm]))
     except JWTError as exc:
         raise ValueError("Invalid token") from exc

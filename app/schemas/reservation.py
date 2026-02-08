@@ -31,7 +31,6 @@ class ReservationOut(BaseModel):
     tickets: List[ReservationTicketOut]
 
 class ConfirmPaymentIn(BaseModel):
-    # симулация – напр. "card" / "cash" / "stripe_mock"
     method: str = "stripe_mock"
 
 class ReservationRescheduleIn(BaseModel):

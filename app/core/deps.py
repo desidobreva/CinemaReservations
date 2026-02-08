@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import Generator, Callable
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -35,7 +35,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-def require_role(*allowed: UserRole):
+def require_role(*allowed: UserRole) -> Callable[..., User]:
     def _guard(user: User = Depends(get_current_user)) -> User:
         if user.role not in allowed:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")

@@ -1,4 +1,3 @@
-# app/routers/users.py
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -31,11 +30,9 @@ def update_me(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> UserOut:
-    # ако user прати празно тяло -> нищо не променяме
     if payload.email is None and payload.username is None and payload.password is None:
         raise HTTPException(status_code=400, detail="No fields provided")
 
-    # уникалност: email / username
     if payload.email is not None:
         exists = (
             db.query(User)
@@ -57,8 +54,8 @@ def update_me(
         user.username = payload.username
 
     if payload.password is not None:
-        if len(payload.password) < 6:
-            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        if len(payload.password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
         user.hashed_password = hash_password(payload.password)
 
     db.commit()

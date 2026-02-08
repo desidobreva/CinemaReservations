@@ -16,7 +16,6 @@ from app.schemas.cinema import (
 router = APIRouter(prefix="/cinema", tags=["cinema"])
 
 
-# ---------------- MOVIES ----------------
 @router.get("/movies", response_model=list[MovieOut])
 def list_movies(
     db: Session = Depends(get_db),
@@ -81,12 +80,11 @@ def delete_movie(
     movie_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     m = db.get(Movie, movie_id)
     if not m:
         raise HTTPException(status_code=404, detail="Movie not found")
 
-    # пазим целостта: ако има прожекции -> не трием
     has_screenings = db.query(Screening.id).filter(Screening.movie_id == movie_id).first() is not None
     if has_screenings:
         raise HTTPException(status_code=400, detail="Cannot delete movie with screenings")
@@ -96,7 +94,6 @@ def delete_movie(
     return {"ok": True}
 
 
-# ---------------- HALLS ----------------
 @router.get("/halls", response_model=list[HallOut])
 def list_halls(db: Session = Depends(get_db)) -> list[HallOut]:
     rows = db.query(Hall).order_by(Hall.id.asc()).all()
@@ -139,7 +136,6 @@ def update_hall(
     if not h:
         raise HTTPException(status_code=404, detail="Hall not found")
 
-    # ако се опитваме да сменим rows/cols, не позволяваме ако има прожекции/резервации
     changing_size = (payload.rows is not None) or (payload.cols is not None)
     if changing_size:
         has_screenings = db.query(Screening.id).filter(Screening.hall_id == hall_id).first() is not None
@@ -147,7 +143,6 @@ def update_hall(
             raise HTTPException(status_code=400, detail="Cannot resize hall with screenings (seat layout would break)")
 
     if payload.name is not None:
-        # уникално име
         exists = db.query(Hall).filter(Hall.name == payload.name, Hall.id != hall_id).first()
         if exists:
             raise HTTPException(status_code=400, detail="Hall name already exists")
@@ -167,7 +162,7 @@ def delete_hall(
     hall_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     h = db.get(Hall, hall_id)
     if not h:
         raise HTTPException(status_code=404, detail="Hall not found")
@@ -181,7 +176,6 @@ def delete_hall(
     return {"ok": True}
 
 
-# ---------------- SCREENINGS ----------------
 @router.get("/screenings", response_model=list[ScreeningOut])
 def list_screenings(
     db: Session = Depends(get_db),
@@ -229,6 +223,16 @@ def create_screening(
     if not db.get(Hall, payload.hall_id):
         raise HTTPException(status_code=404, detail="Hall not found")
 
+    from datetime import timedelta
+    overlap_buffer = timedelta(minutes=15)
+    overlapping = db.query(Screening).filter(
+        Screening.hall_id == payload.hall_id,
+        Screening.starts_at >= payload.starts_at - overlap_buffer,
+        Screening.starts_at < payload.starts_at + overlap_buffer
+    ).first()
+    if overlapping:
+        raise HTTPException(status_code=400, detail="Screening overlaps with existing one in this hall")
+
     s = Screening(movie_id=payload.movie_id, hall_id=payload.hall_id, starts_at=payload.starts_at, provider_id=user.id)
     db.add(s)
     db.commit()
@@ -247,11 +251,9 @@ def update_screening(
     if not s:
         raise HTTPException(status_code=404, detail="Screening not found")
 
-    # provider може да редактира само свои прожекции (admin може всичко)
     if user.role != UserRole.ADMIN and s.provider_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    # ако има резервации, не позволяваме смяна на hall_id/movie_id (за да не се чупят)
     has_reservations = db.query(Reservation.id).filter(Reservation.screening_id == screening_id).first() is not None
     if has_reservations and (payload.hall_id is not None or payload.movie_id is not None):
         raise HTTPException(status_code=400, detail="Cannot change hall/movie when reservations exist")
@@ -279,7 +281,7 @@ def delete_screening(
     screening_id: int,
     db: Session = Depends(get_db),
     user: User = Depends(require_role(UserRole.PROVIDER, UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     s = db.get(Screening, screening_id)
     if not s:
         raise HTTPException(status_code=404, detail="Screening not found")

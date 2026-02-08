@@ -14,13 +14,14 @@ from app.schemas.user import UserOut, UserRoleUpdateIn
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-# ---------------- USERS ----------------
 @router.get("/users", response_model=list[UserOut])
 def list_users(
     db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 100,
     _: User = Depends(require_role(UserRole.ADMIN)),
 ) -> list[UserOut]:
-    rows = db.query(User).order_by(User.id.asc()).all()
+    rows = db.query(User).order_by(User.id.asc()).offset(skip).limit(min(limit, 100)).all()
     return [UserOut(id=u.id, email=u.email, username=u.username, role=u.role) for u in rows]
 
 
@@ -47,11 +48,9 @@ def update_user_role(
     if not u:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # не позволяваме да променяш себе си (по-сигурно)
     if u.id == current.id:
         raise HTTPException(status_code=400, detail="Cannot change your own role")
 
-    # не позволяваме да създаваш/правиш ADMIN през API
     if payload.role == UserRole.ADMIN or u.role == UserRole.ADMIN:
         raise HTTPException(status_code=400, detail="Admin role cannot be assigned/changed via API")
 
@@ -66,7 +65,7 @@ def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
     current: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     u = db.get(User, user_id)
     if not u:
         raise HTTPException(status_code=404, detail="User not found")
@@ -77,15 +76,12 @@ def delete_user(
     if u.role == UserRole.ADMIN:
         raise HTTPException(status_code=400, detail="Admin user cannot be deleted via API")
 
-    # изчистваме зависимости: favorites, reviews, reservations(+tickets)
     db.query(FavoriteMovie).filter(FavoriteMovie.user_id == user_id).delete()
 
     db.query(Review).filter(Review.user_id == user_id).delete()
 
-    # изтриваме reservations + tickets
     reservations = db.query(Reservation).filter(Reservation.user_id == user_id).all()
     for r in reservations:
-        # tickets
         db.query(ReservationTicket).filter(ReservationTicket.reservation_id == r.id).delete()
         db.delete(r)
 
@@ -94,13 +90,12 @@ def delete_user(
     return {"ok": True}
 
 
-# ---------------- RESERVATIONS ----------------
 @router.delete("/reservations/{reservation_id}")
 def admin_delete_reservation(
     reservation_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     r = db.get(Reservation, reservation_id)
     if not r:
         raise HTTPException(status_code=404, detail="Reservation not found")
@@ -111,7 +106,6 @@ def admin_delete_reservation(
     return {"ok": True}
 
 
-# Admin: confirm reservation (mark as CONFIRMED)
 @router.post("/reservations/{reservation_id}/confirm", response_model=ReservationOut)
 def admin_confirm_reservation(
     reservation_id: int,
@@ -140,7 +134,6 @@ def admin_confirm_reservation(
     )
 
 
-# Admin: complete reservation (mark as COMPLETED)
 @router.post("/reservations/{reservation_id}/complete", response_model=ReservationOut)
 def admin_complete_reservation(
     reservation_id: int,
@@ -151,11 +144,9 @@ def admin_complete_reservation(
     if not r:
         raise HTTPException(status_code=404, detail="Reservation not found")
 
-    # правила за статус
     if r.status == ReservationStatus.CANCELED:
         raise HTTPException(status_code=400, detail="Canceled reservations cannot be completed")
 
-    # най-често completed се позволява само ако е CONFIRMED
     if r.status != ReservationStatus.CONFIRMED:
         raise HTTPException(status_code=400, detail="Can complete only confirmed reservations")
 
@@ -174,13 +165,12 @@ def admin_complete_reservation(
     )
 
 
-# ---------------- MOVIES ----------------
 @router.delete("/movies/{movie_id}")
 def admin_delete_movie(
     movie_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     m = db.get(Movie, movie_id)
     if not m:
         raise HTTPException(status_code=404, detail="Movie not found")
@@ -189,7 +179,6 @@ def admin_delete_movie(
     if has_screenings:
         raise HTTPException(status_code=400, detail="Cannot delete movie with screenings")
 
-    # reviews + favorites към movie
     db.query(Review).filter(Review.movie_id == movie_id).delete()
     db.query(FavoriteMovie).filter(FavoriteMovie.movie_id == movie_id).delete()
 
@@ -198,13 +187,12 @@ def admin_delete_movie(
     return {"ok": True}
 
 
-# ---------------- HALLS ----------------
 @router.delete("/halls/{hall_id}")
 def admin_delete_hall(
     hall_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     h = db.get(Hall, hall_id)
     if not h:
         raise HTTPException(status_code=404, detail="Hall not found")
@@ -218,13 +206,12 @@ def admin_delete_hall(
     return {"ok": True}
 
 
-# ---------------- SCREENINGS ----------------
 @router.delete("/screenings/{screening_id}")
 def admin_delete_screening(
     screening_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_role(UserRole.ADMIN)),
-) -> dict:
+) -> dict[str, bool]:
     s = db.get(Screening, screening_id)
     if not s:
         raise HTTPException(status_code=404, detail="Screening not found")

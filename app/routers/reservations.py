@@ -55,7 +55,6 @@ def get_reservation(
     if not r:
         raise HTTPException(status_code=404, detail="Reservation not found")
 
-    # собственик или provider/admin
     if r.user_id != user.id and user.role not in (UserRole.PROVIDER, UserRole.ADMIN):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -80,9 +79,6 @@ def cancel_reservation(
 
     r.tickets.clear()
     r.status = ReservationStatus.CANCELED
-    # освобождаваме места (трием ticket-ите)
-    # for t in list(r.tickets):
-    #     db.delete(t)
 
     db.commit()
     db.refresh(r)
@@ -100,7 +96,6 @@ def confirm_reservation_payment(
     if not r:
         raise HTTPException(status_code=404, detail="Reservation not found")
 
-    # собственик или provider/admin
     if r.user_id != user.id and user.role not in (UserRole.PROVIDER, UserRole.ADMIN):
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -111,12 +106,13 @@ def confirm_reservation_payment(
     if not screening:
         raise HTTPException(status_code=404, detail="Screening not found")
 
-    # не позволяваме "покупка" след началото на прожекцията
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    if screening.starts_at <= now:
+    now = datetime.now(timezone.utc)
+    screening_time = screening.starts_at
+    if screening_time.tzinfo is None:
+        screening_time = screening_time.replace(tzinfo=timezone.utc)
+    if screening_time <= now:
         raise HTTPException(status_code=400, detail="Screening already started")
 
-    # симулация: приемаме, че плащането е успешно
     r.status = ReservationStatus.CONFIRMED
     db.commit()
     db.refresh(r)
@@ -134,20 +130,17 @@ def reschedule_reservation(
     if not r:
         raise HTTPException(status_code=404, detail="Reservation not found")
 
-    # само собственикът (или admin/provider)
     if r.user_id != user.id and user.role not in (UserRole.PROVIDER, UserRole.ADMIN):
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    # позволяваме reschedule само ако не е COMPLETED
     if r.status == ReservationStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Cannot reschedule completed reservation")
 
-    # 1) cancel старата
+    r.tickets.clear() 
     r.status = ReservationStatus.CANCELED
     db.commit()
     db.refresh(r)
 
-    # 2) create нова (new screening + new seats)
     new_data = ReservationCreateIn(
         screening_id=payload.new_screening_id,
         seats=payload.seats,

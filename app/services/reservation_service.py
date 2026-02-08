@@ -13,7 +13,6 @@ def create_reservation(db: Session, user: User, data: ReservationCreateIn) -> Re
     if not screening:
         raise HTTPException(status_code=404, detail="Screening not found")
 
-    # валидираме граници на седалките спрямо залата
     hall = screening.hall
     for s in data.seats:
         if s.seat_row > hall.rows or s.seat_col > hall.cols:
@@ -26,7 +25,7 @@ def create_reservation(db: Session, user: User, data: ReservationCreateIn) -> Re
         notes=data.notes,
     )
     db.add(reservation)
-    db.flush()  # да вземем reservation.id преди tickets
+    db.flush()
 
     for s in data.seats:
         db.add(
@@ -42,7 +41,6 @@ def create_reservation(db: Session, user: User, data: ReservationCreateIn) -> Re
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        # UniqueConstraint -> някой вече е резервирал това място
         raise HTTPException(status_code=409, detail="One or more seats already booked") from exc
 
     db.refresh(reservation)

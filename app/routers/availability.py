@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db
@@ -9,7 +10,7 @@ router = APIRouter(prefix="/screenings", tags=["availability"])
 
 
 @router.get("/{screening_id}/availability")
-def screening_availability(screening_id: int, db: Session = Depends(get_db)) -> dict:
+def screening_availability(screening_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
     screening = db.get(Screening, screening_id)
     if not screening:
         raise HTTPException(status_code=404, detail="Screening not found")

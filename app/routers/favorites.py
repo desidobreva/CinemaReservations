@@ -12,8 +12,13 @@ router = APIRouter(prefix="/favorites", tags=["favorites"])
 
 
 @router.get("/movies", response_model=list[FavoriteOut])
-def list_favorites(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> list[FavoriteOut]:
-    rows = db.query(FavoriteMovie).filter(FavoriteMovie.user_id == user.id).order_by(FavoriteMovie.id.desc()).all()
+def list_favorites(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 100,
+) -> list[FavoriteOut]:
+    rows = db.query(FavoriteMovie).filter(FavoriteMovie.user_id == user.id).order_by(FavoriteMovie.id.desc()).offset(skip).limit(min(limit, 100)).all()
     return [FavoriteOut(id=f.id, user_id=f.user_id, movie_id=f.movie_id) for f in rows]
 
 
@@ -34,7 +39,7 @@ def add_favorite(movie_id: int, db: Session = Depends(get_db), user: User = Depe
 
 
 @router.delete("/movies/{movie_id}")
-def remove_favorite(movie_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
+def remove_favorite(movie_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict[str, bool]:
     fav = db.query(FavoriteMovie).filter(FavoriteMovie.user_id == user.id, FavoriteMovie.movie_id == movie_id).first()
     if not fav:
         raise HTTPException(status_code=404, detail="Not in favorites")

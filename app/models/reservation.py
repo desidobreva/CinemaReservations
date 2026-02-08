@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey, String, DateTime, Enum, UniqueConstraint, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,21 +8,21 @@ from app.db.base import Base
 
 
 class ReservationStatus(str, enum.Enum):
-    PENDING = "PENDING"       # очаква потвърждение
-    CONFIRMED = "CONFIRMED"   # потвърдена/платена
-    CANCELED = "CANCELED"     # отменена
-    COMPLETED = "COMPLETED"   # завършена (след прожекция)
+    PENDING = "PENDING"     
+    CONFIRMED = "CONFIRMED" 
+    CANCELED = "CANCELED"    
+    COMPLETED = "COMPLETED" 
 
 
 class Reservation(Base):
     __tablename__ = "reservations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     status: Mapped[ReservationStatus] = mapped_column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)         # клиент
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)   
     screening_id: Mapped[int] = mapped_column(ForeignKey("screenings.id"), index=True)
 
     notes: Mapped[str] = mapped_column(String(1000), default="")
@@ -39,7 +39,7 @@ class Reservation(Base):
 class ReservationTicket(Base):
     __tablename__ = "reservation_tickets"
     reservation = relationship("Reservation", back_populates="tickets")
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     reservation_id: Mapped[int] = mapped_column(ForeignKey("reservations.id"), index=True)
     screening_id: Mapped[int] = mapped_column(ForeignKey("screenings.id"), index=True)

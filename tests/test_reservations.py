@@ -6,9 +6,6 @@ def test_confirm_reservation(client):
     token = r.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # трябва да имаме provider/admin за създаване на movie/hall/screening.
-    # за теста можеш временно да seed-неш provider в init_db или да позволиш ADMIN create.
-    # Тук приемаме, че admin съществува: username=admin pass=admin1234
     admin_login = client.post(
     "/auth/login",
     data={"username": "admin", "password": "admin1234"},
