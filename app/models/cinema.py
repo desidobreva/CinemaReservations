@@ -10,7 +10,7 @@ class Movie(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(200), index=True)
     description: Mapped[str] = mapped_column(String(2000), default="")
-    category: Mapped[str] = mapped_column(String(100), default="General")  # жанр/категория
+    category: Mapped[str] = mapped_column(String(100), default="General")
 
 
 class Hall(Base):
@@ -29,7 +29,7 @@ class Screening(Base):
     hall_id: Mapped[int] = mapped_column(ForeignKey("halls.id"))
 
     starts_at: Mapped[datetime] = mapped_column(DateTime, index=True)
-    provider_id: Mapped[int] = mapped_column(ForeignKey("users.id"))  # доставчик/кино админ
+    provider_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     movie = relationship("Movie")
     hall = relationship("Hall")

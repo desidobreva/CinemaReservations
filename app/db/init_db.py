@@ -6,7 +6,6 @@ from app.core.security import hash_password
 
 
 def ensure_admin(db: Session) -> None:
-    # един админ профил при създаване на платформата
     admin = db.scalar(select(User).where(User.role == UserRole.ADMIN))
     if admin:
         return
